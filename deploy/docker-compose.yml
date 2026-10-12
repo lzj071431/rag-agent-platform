@@ -1,0 +1,30 @@
+# rag-qa-project 部署编排文件
+# 构建上下文 = 本目录（deploy/），与 Dockerfile 配套使用
+#
+# 说明：
+#   - .env 通过 env_file 注入容器，主程序 config.py 也会 load_dotenv() 读取
+#   - chroma_db 挂载到宿主机，重建镜像不会丢失已建好的向量库
+#   - models/ 目录（BAAI/bge-small-zh-v1.5）随构建上下文打进镜像 /app/models，
+#     因为 vector_store.py 强制 local_files_only=True
+services:
+  rag-qa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rag-qa-app:latest
+    container_name: rag-qa-app
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./chroma_db:/app/chroma_db
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s

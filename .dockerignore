@@ -1,0 +1,80 @@
+﻿# ============================================================
+# 构建上下文 = 项目根目录（docker-compose.yml 中 context: .）
+# 作用范围：本文件在项目根目录生效
+#
+# 【重要】deploy/ 不能被排除 —— 部署时构建上下文就是 deploy/ 本身，
+# 排除它会导致 docker build 找不到任何代码，镜像里只有依赖没有程序。
+# ============================================================
+
+# --- Python 缓存 ---
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- 向量库：必须排除 ---
+# 运行时通过 docker-compose 的 volume 挂载宿主机目录提供，
+# 绝不能打进镜像（否则重建镜像时旧库被固化，且镜像膨胀）
+chroma_db/
+chroma_db.bak*/
+*.bak
+*.bak_*
+competitor_analysis_report.md*
+
+# --- 备份与临时文件 ---
+*.log
+*.tmp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- 版本控制与 IDE ---
+.git/
+.idea/
+.vscode/
+
+# --- 本地虚拟环境（若误拷入，切勿打进镜像）---
+.venv/
+venv/
+env/
+
+# --- 本地部署辅助脚本（含密码/凭据，绝不能进镜像或上传）---
+deploy_two_files.py
+upload_to_server.py
+auto_deploy.py
+.deploy_pw
+
+# --- 测试与评估脚本（非运行时依赖）---
+test_agent.py
+evaluate_retrieval.py
+verify_retrieval.py
+inspect_chunks.py
+test_set.json
+test.pdf
+
+# --- 原始 PDF（体积大且已预处理为 *_clean.txt）---
+finance.pdf
+yili_clean.pdf
+finance_clean.pdf
+
+# --- 备份 ---
+*.bak_*
+.deploy_pw
+requirements.txt.bak_*
+.dockerignore.bak_*
+
+# ============================================================
+# 显式保留（必须位于所有排除规则之后）
+# ============================================================
+# .env：运行时注入 DEEPSEEK_API_KEY / FEISHU_WEBHOOK_URL
+!.env
+!deploy/.env
+!deploy/*.txt
+!deploy/.py
+
+# 说明：models/ 【不排除】。
+# vector_store.py 强制 local_files_only=True 且 cache_folder=./models，
+# 模型必须存在于镜像内 /app/models，否则容器启动即抛异常。
+# bge-small-zh-v1.5 约 95MB，由 download_model.py 生成，体积可接受。

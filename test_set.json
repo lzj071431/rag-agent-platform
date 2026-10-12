@@ -1,0 +1,142 @@
+[
+  {
+    "id": "Q01",
+    "question": "本激励计划中，独立财务顾问是指哪家公司？",
+    "ground_truth": "东方财富证券股份有限公司。",
+    "relevant_chunk_ids": ["chunk_0"],
+    "type": "factual"
+  },
+  {
+    "id": "Q02",
+    "question": "什么是行权条件？",
+    "ground_truth": "行权条件是指根据本激励计划，激励对象行使股票期权所必须满足的条件。",
+    "relevant_chunk_ids": ["chunk_1"],
+    "type": "definition"
+  },
+  {
+    "id": "Q03",
+    "question": "关于本激励计划，董事会第五次会议是在哪一天召开的？",
+    "ground_truth": "2025年3月5日。",
+    "relevant_chunk_ids": ["chunk_6"],
+    "type": "factual"
+  },
+  {
+    "id": "Q04",
+    "question": "2025年4月7日授予的股票期权行权价格是多少？",
+    "ground_truth": "每份人民币15.83元。",
+    "relevant_chunk_ids": ["chunk_10"],
+    "type": "numerical"
+  },
+  {
+    "id": "Q05",
+    "question": "2025年5月13日完成登记后，最终授予的激励对象人数是多少？",
+    "ground_truth": "201人。",
+    "relevant_chunk_ids": ["chunk_10"],
+    "type": "numerical"
+  },
+  {
+    "id": "Q06",
+    "question": "2026年4月，公司决定注销多少万份股票期权？",
+    "ground_truth": "156.20万份。",
+    "relevant_chunk_ids": ["chunk_11"],
+    "type": "numerical"
+  },
+  {
+    "id": "Q07",
+    "question": "调整后，公司2025年营业收入的考核目标值是多少？",
+    "ground_truth": "不低于56.00亿元。",
+    "relevant_chunk_ids": ["chunk_13", "chunk_16"],
+    "type": "numerical"
+  },
+  {
+    "id": "Q08",
+    "question": "独立财务顾问报告在第三章中提出了哪些基本假设？",
+    "ground_truth": "包括国家现行法律政策无重大变化、公司经营环境无重大变化、资料真实准确、计划不存在障碍等。",
+    "relevant_chunk_ids": ["chunk_5"],
+    "type": "factual"
+  },
+  {
+    "id": "Q09",
+    "question": "本次激励计划修订后，公司的业绩考核指标分几年进行考核？",
+    "ground_truth": "分年度进行考核。",
+    "relevant_chunk_ids": ["chunk_13"],
+    "type": "factual"
+  },
+  {
+    "id": "Q10",
+    "question": "2025年3月6日，公司披露了哪些关于激励计划的文件？",
+    "ground_truth": "披露了《上海妙可蓝多食品科技股份有限公司2025年股票期权激励计划（草案）》及其摘要等文件。",
+    "relevant_chunk_ids": ["chunk_6"],
+    "type": "procedural"
+  },
+  {
+    "id": "Q11",
+    "question": "关于内幕信息知情人买卖公司股票情况的自查报告是在哪一天披露的？",
+    "ground_truth": "2025年3月22日。",
+    "relevant_chunk_ids": ["chunk_9"],
+    "type": "factual"
+  },
+  {
+    "id": "Q12",
+    "question": "针对2025年股票期权激励计划，独立财务顾问的核查意见是什么？",
+    "ground_truth": "截至本报告出具日，本激励计划修订相关事项已经取得现阶段必要的授权和批准，符合相关法律法规的规定，不存在损害公司及全体股东利益的情形。",
+    "relevant_chunk_ids": ["chunk_19"],
+    "type": "factual"
+  },
+  {
+    "id": "Q13",
+    "question": "本激励计划中，股票期权的授予日是哪一天？",
+    "ground_truth": "2025年4月7日。",
+    "relevant_chunk_ids": ["chunk_10"],
+    "type": "factual"
+  },
+  {
+    "id": "Q14",
+    "question": "2025年4月7日，公司向多少名激励对象授予了股票期权？",
+    "ground_truth": "202名。",
+    "relevant_chunk_ids": ["chunk_10"],
+    "type": "numerical"
+  },
+  {
+    "id": "Q15",
+    "question": "关于调整2025年股票期权激励计划相关事项的议案是在哪次会议审议通过的？",
+    "ground_truth": "公司第十二届董事会第七次会议和第十二届监事会第五次会议。",
+    "relevant_chunk_ids": ["chunk_9", "chunk_12"],
+    "type": "factual"
+  },
+  {
+    "id": "Q16",
+    "question": "修订后的激励计划中，2027年净利润的考核目标值是多少？",
+    "ground_truth": "不低于4.60亿元。",
+    "relevant_chunk_ids": ["chunk_17"],
+    "type": "numerical"
+  },
+  {
+    "id": "Q17",
+    "question": "本次修订将“股东大会”的表述统一修改为什么？",
+    "ground_truth": "修改为“股东会”。",
+    "relevant_chunk_ids": ["chunk_18"],
+    "type": "factual"
+  },
+  {
+    "id": "Q18",
+    "question": "2026年1月22日，公司完成了什么事项？",
+    "ground_truth": "完成了部分股票期权的注销事项。",
+    "relevant_chunk_ids": ["chunk_11"],
+    "type": "factual"
+  },
+  {
+    "id": "Q19",
+    "question": "如果公司2025年营业收入低于50.40亿元，行权系数X是多少？",
+    "ground_truth": "X=0%。",
+    "relevant_chunk_ids": ["chunk_16", "chunk_17"],
+    "type": "numerical"
+  },
+  {
+    "id": "Q20",
+    "question": "报告中是否包含了宁德时代2025年的财务数据？",
+    "ground_truth": "文档中未提及",
+    "relevant_chunk_ids": [],
+    "type": "negative"
+  }
+]

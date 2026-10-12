@@ -1,0 +1,53 @@
+# ========= 敏感配置：含密码/密钥/Token，绝不提交 =========
+.env
+.env.*
+.deploy_pw
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# ========= 部署脚本（含服务器密码/内网信息） =========
+auto_deploy.py
+auto_deploy_full.py
+upload_to_server.py
+
+# ========= 虚拟环境 =========
+.venv/
+venv/
+env/
+
+# ========= Python 缓存 =========
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ========= 本地向量库 / 模型（体积巨大：models 约 1.2G） =========
+chroma_db/
+chroma_db.*/
+models/
+
+# ========= 文档与数据产物 =========
+*.pdf
+*.log
+*.txt
+# 例外：依赖清单必须入库，否则项目无法复现
+!requirements.txt
+!requirements-*.txt
+
+# ========= IDE / 编辑器 =========
+.idea/
+.vscode/
+
+# ========= 备份文件 =========
+*.bak
+*.bak_*
+*.old
+
+# ========= 系统文件 =========
+.DS_Store
+Thumbs.db
