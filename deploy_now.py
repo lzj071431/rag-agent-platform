@@ -149,9 +149,14 @@ def preflight() -> list[tuple[Path, str]]:
     if missing:
         raise SystemExit(f"deploy/ 缺少必需文件：{', '.join(missing)}\n请先运行 python sync_deploy.py")
 
+    # 清理本地测试/导入产生的缓存，避免被打进镜像
+    purged = _purge_caches()
+
     items = collect_files()
     total = sum(p.stat().st_size for p, _ in items)
     ok(f"deploy/ 就绪：{len(items)} 个文件，{total / 1024:.1f} KB")
+    if purged:
+        ok(f"已清理 {purged} 个缓存/日志文件")
 
     # 提示是否与根目录同步（不阻塞，只提醒）
     try:
@@ -168,6 +173,29 @@ def preflight() -> list[tuple[Path, str]]:
         warn("跳过同步校验（sync_deploy.py 不可用）")
 
     return items
+
+
+def _purge_caches() -> int:
+    """删除 deploy/ 中的 __pycache__、*.pyc、logs/，返回清理数量。"""
+    import shutil
+
+    removed = 0
+    for pycache in DEPLOY_DIR.rglob("__pycache__"):
+        if pycache.is_dir():
+            shutil.rmtree(pycache, ignore_errors=True)
+            removed += 1
+    for logs in DEPLOY_DIR.rglob("logs"):
+        if logs.is_dir():
+            shutil.rmtree(logs, ignore_errors=True)
+            removed += 1
+    for pattern in ("*.pyc", "*.pyo", "*.log"):
+        for f in DEPLOY_DIR.rglob(pattern):
+            try:
+                f.unlink()
+                removed += 1
+            except OSError:
+                pass
+    return removed
 
 
 # ======================================================================
