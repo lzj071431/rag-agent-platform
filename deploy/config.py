@@ -1,38 +1,72 @@
-import os
+"""向后兼容层 —— 旧版 ``config`` 模块。
 
-# 强制离线模式（必须在导入其他库之前设置）
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
+历史上业务代码大量使用 ``from config import PERSIST_DIR, MODEL_NAME``。
+为保证既有脚本（``build_vectorstore.py`` / ``evaluate_retrieval.py`` /
+``verify_retrieval.py`` 等）无需改动即可继续运行，这里把新配置中心
+``core.config.settings`` 的字段以**旧的扁平常量名**重新导出。
 
-from dotenv import load_dotenv
+新代码请直接使用::
 
-load_dotenv()
+    from core.config import settings
+    settings.persist_dir
+    settings.chunking.size
 
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
-MODEL_NAME = "deepseek-chat"
+⚠️ 本文件仅做转发，不包含任何逻辑。
+"""
 
-# ================= 切分参数（财报类长文档调优） =================
-# 原值 500/50：一个完整的财务/公告段落常被拦腰切断，
-# "行权价格为每份人民币15.83元" 这类关键句容易被切散，故放大到 800/100。
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 100
+from __future__ import annotations
+
+# 先导入 core.config，确保离线开关在任何第三方库之前生效
+from core.config import PROJECT_ROOT, get_settings, settings
+
+# ================= 大模型 =================
+DEEPSEEK_API_KEY: str = settings.deepseek_api_key.get_secret_value()
+DEEPSEEK_BASE_URL: str = settings.deepseek_base_url
+MODEL_NAME: str = settings.model_name
+LLM_TEMPERATURE: float = settings.llm_temperature
+
+# ================= 切分参数 =================
+CHUNK_SIZE: int = settings.chunking.size
+CHUNK_OVERLAP: int = settings.chunking.overlap
+SECTION_MARKER: str = settings.chunking.section_marker
 
 # ================= 检索参数 =================
-# 原值 k=5：在只有 279~435 个块的库里召回过窄，关键段落排在第 10~37 名，永远进不了前 5。
-VECTOR_K = 15      # 向量检索召回数
-BM25_K = 15        # 关键词(BM25)检索召回数
-FINAL_K = 10       # RRF 融合后最终交给大模型的块数
-RRF_C = 60         # RRF 平滑常数（业界惯例 60）
-BM25_WEIGHT = 1.5  # BM25 在 RRF 中的权重：财报问答里精确数字/专名靠它命中，故略加权
+VECTOR_K: int = settings.retrieval.vector_k
+BM25_K: int = settings.retrieval.bm25_k
+FINAL_K: int = settings.retrieval.final_k
+RRF_C: int = settings.retrieval.rrf_c
+BM25_WEIGHT: float = settings.retrieval.bm25_weight
+ENABLE_HYBRID: bool = settings.retrieval.enable_hybrid
+ENABLE_MULTI_QUERY: bool = settings.retrieval.enable_multi_query
 
-# 关闭时为纯向量检索（仅用于对比排查）
-ENABLE_HYBRID = True
-# 开启后会额外调用 LLM 生成多个改写 query，提升召回但增加 1 次 API 调用与延迟
-ENABLE_MULTI_QUERY = False
+# ================= 向量库 =================
+EMBEDDING_MODEL: str = settings.embedding_model
+PERSIST_DIR: str = settings.persist_dir
+COLLECTION_NAME: str = settings.collection_name
 
-EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"
-PERSIST_DIR = "./chroma_db"
+# ================= 外部集成 =================
+FEISHU_WEBHOOK_URL: str = settings.feishu_webhook_url.get_secret_value()
 
-# 多文档合并时的分节标记，splitter.py 依赖它来做"按公司/文件分节 + 上下文前缀"
-SECTION_MARKER = "====="
+__all__ = [
+    "PROJECT_ROOT",
+    "get_settings",
+    "settings",
+    "DEEPSEEK_API_KEY",
+    "DEEPSEEK_BASE_URL",
+    "MODEL_NAME",
+    "LLM_TEMPERATURE",
+    "CHUNK_SIZE",
+    "CHUNK_OVERLAP",
+    "SECTION_MARKER",
+    "VECTOR_K",
+    "BM25_K",
+    "FINAL_K",
+    "RRF_C",
+    "BM25_WEIGHT",
+    "ENABLE_HYBRID",
+    "ENABLE_MULTI_QUERY",
+    "EMBEDDING_MODEL",
+    "PERSIST_DIR",
+    "COLLECTION_NAME",
+    "FEISHU_WEBHOOK_URL",
+]

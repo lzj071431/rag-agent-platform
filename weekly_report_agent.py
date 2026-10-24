@@ -1,187 +1,136 @@
-import os
-import logging
-import httpx
-from typing import TypedDict, List
-from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langgraph.graph import StateGraph, END
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, MODEL_NAME
+"""向后兼容层 —— 旧版 ``weekly_report_agent`` 模块。
 
-# ================= 1. 初始化与日志配置 =================
-load_dotenv()
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+实际实现已迁移到 :mod:`services.report_service`。
 
-# 从环境变量读取飞书 Webhook，避免硬编码导致泄露
-FEISHU_WEBHOOK = os.getenv("FEISHU_WEBHOOK_URL", "")
-MAX_CONTENT = 20_000  # 飞书单条消息字符上限，留余量
+本模块保留旧版**全部公开名字**，确保历史脚本 / 文档 / 面试演示代码
+可以直接 ``from weekly_report_agent import app, fetch_tasks`` 而不失效：
 
-# ================= 2. 定义状态 =================
-class WeeklyReportState(TypedDict):
-    tasks: List[dict]
-    stats: dict
-    report: str
-    status: str
-    error: str  # 关键：必须声明，否则 LangGraph 更新状态时会报错
+* ``fetch_tasks`` / ``analyze_tasks`` / ``generate_report`` / ``send_report``
+  —— 旧版 LangGraph 节点函数（现在是绑定了默认服务的可调用对象）
+* ``_build_card`` —— 旧版飞书卡片构建
+* ``workflow`` / ``app`` —— 旧版工作流对象与编译后的图
+* ``FEISHU_WEBHOOK`` / ``MAX_CONTENT`` / ``llm`` / ``http_client`` —— 旧版模块级变量
 
-# ================= 3. 初始化 LLM =================
-http_client = httpx.Client()
-llm = ChatOpenAI(
-    model=MODEL_NAME,
-    api_key=DEEPSEEK_API_KEY,
-    base_url=DEEPSEEK_BASE_URL,
-    temperature=0.3,
-    http_client=http_client,
+命令行用法保持不变::
+
+    python weekly_report_agent.py
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from core.config import settings
+from core.logger import get_logger, setup_logging
+from services.report_service import (
+    WeeklyReportResult,
+    WeeklyReportService,
+    WeeklyReportState,
+    build_weekly_report_graph,
+    default_task_provider,
 )
 
-# ================= 4. 定义节点函数 =================
+setup_logging()
+logger = get_logger(__name__)
+
+#: 兼容旧变量：飞书 Webhook 与正文长度上限
+FEISHU_WEBHOOK: str = settings.feishu_webhook_url.get_secret_value()
+MAX_CONTENT: int = settings.webhook_max_content
+
+
+# ======================================================================
+# 节点函数（旧签名：接收并返回 state）
+# ======================================================================
+# 注意：不能直接暴露 WeeklyReportService._fetch_tasks —— 那是未绑定的
+# 实例方法，调用 fetch_tasks(state) 会少传 self 而抛 TypeError。
+# 这里用默认服务实例绑定后包装成普通函数。
+_default_service = WeeklyReportService(send_to_feishu=True)
+
 
 def fetch_tasks(state: WeeklyReportState) -> WeeklyReportState:
-    """节点1：获取本周任务（模拟数据）"""
-    mock_tasks = [
-        {"id": 1, "title": "完成 RAG 系统评估", "status": "done"},
-        {"id": 2, "title": "优化 Reranker 集成", "status": "done"},
-        {"id": 3, "title": "编写 README 文档", "status": "done"},
-        {"id": 4, "title": "调研 LangGraph 工作流", "status": "in_progress"},
-        {"id": 5, "title": "准备技术分享 PPT", "status": "todo"},
-    ]
-    logger.info("📥 [节点1] 获取本周任务...")
-    return {"tasks": mock_tasks, "status": "tasks_fetched"}
+    """节点1：获取本周任务（兼容旧接口）。"""
+    return _default_service._fetch_tasks(state)
+
 
 def analyze_tasks(state: WeeklyReportState) -> WeeklyReportState:
-    """节点2：分析任务完成情况"""
-    tasks = state["tasks"]
-    total = len(tasks)
-    done = [t for t in tasks if t["status"] == "done"]
-    in_progress = [t for t in tasks if t["status"] == "in_progress"]
-    todo = [t for t in tasks if t["status"] == "todo"]
-    completion_rate = len(done) / total * 100 if total > 0 else 0
+    """节点2：分析任务完成情况（兼容旧接口）。"""
+    return _default_service._analyze_tasks(state)
 
-    stats = {
-        "total": total,
-        "done": len(done),
-        "in_progress": len(in_progress),
-        "todo": len(todo),
-        "completion_rate": round(completion_rate, 1),
-        "done_list": [t["title"] for t in done],
-        "in_progress_list": [t["title"] for t in in_progress],
-        "todo_list": [t["title"] for t in todo],
-    }
-    logger.info(f"📊 [节点2] 统计完成：共 {total} 项，完成 {len(done)} 项，完成率 {completion_rate:.1f}%")
-    return {"stats": stats, "status": "analyzed"}
 
 def generate_report(state: WeeklyReportState) -> WeeklyReportState:
-    """节点3：调用 LLM 生成周报"""
-    stats = state["stats"]
-    prompt = ChatPromptTemplate.from_template("""
-你是一个专业的周报助手。请根据以下数据，生成一份简洁、专业的周报：
+    """节点3：调用 LLM 生成周报（兼容旧接口）。"""
+    return _default_service._generate_report(state)
 
-本周任务总数：{total}
-已完成：{done} 项
-进行中：{in_progress} 项
-未开始：{todo} 项
-完成率：{completion_rate}%
-
-已完成任务列表：
-{done_list}
-
-进行中任务列表：
-{in_progress_list}
-
-未开始任务列表：
-{todo_list}
-
-请用 Markdown 格式输出，包含：本周工作总结、完成情况、下周计划。语言要专业、积极。
-""")
-    chain = prompt | llm | StrOutputParser()
-    report = chain.invoke({
-        "total": stats["total"],
-        "done": stats["done"],
-        "in_progress": stats["in_progress"],
-        "todo": stats["todo"],
-        "completion_rate": stats["completion_rate"],
-        "done_list": "\n".join(f"- {t}" for t in stats["done_list"]),
-        "in_progress_list": "\n".join(f"- {t}" for t in stats["in_progress_list"]),
-        "todo_list": "\n".join(f"- {t}" for t in stats["todo_list"]),
-    })
-    logger.info("✍️ [节点3] 周报生成完成")
-    return {"report": report, "status": "report_generated"}
-
-def _build_card(report: str) -> dict:
-    """构建飞书消息卡片"""
-    return {
-        "msg_type": "interactive",
-        "card": {
-            "config": {"wide_screen_mode": True},
-            "header": {
-                "title": {"tag": "plain_text", "content": "📊 本周工作周报"},
-                "template": "blue",
-            },
-            "elements": [{"tag": "markdown", "content": report[:MAX_CONTENT]}],
-        },
-    }
 
 def send_report(state: WeeklyReportState) -> WeeklyReportState:
-    """节点4：发送周报到飞书。失败不抛异常，通过 status 向下游传递结果。"""
-    if not FEISHU_WEBHOOK:
-        raise RuntimeError("未配置环境变量 FEISHU_WEBHOOK_URL，请检查 .env 文件")
+    """节点4：发送周报到飞书（兼容旧接口）。"""
+    return _default_service._send_report(state)
 
-    report = (state.get("report") or "").strip()
-    if not report:
-        logger.warning("周报内容为空，跳过发送")
-        return {"status": "skipped", "error": "empty report"}
 
-    logger.info("📤 [节点4] 正在发送周报到飞书...")
-    try:
-        resp = httpx.post(
-            FEISHU_WEBHOOK,
-            json=_build_card(report),
-            timeout=httpx.Timeout(10.0, connect=5.0),
-        )
-        body = resp.json()
-    except httpx.TimeoutException:
-        logger.exception("发送飞书超时")
-        return {"status": "failed", "error": "timeout"}
-    except (httpx.HTTPError, ValueError) as e:
-        logger.exception("发送飞书异常")
-        return {"status": "failed", "error": str(e)}
+def _build_card(report: str) -> dict[str, Any]:
+    """构建飞书消息卡片（兼容旧接口）。"""
+    from utils.webhook import build_feishu_card
 
-    # 关键：以响应体 code 为准，而不是只看 HTTP 状态码
-    if resp.status_code == 200 and body.get("code") == 0:
-        logger.info("✅ 周报已成功发送到飞书群")
-        return {"status": "sent"}
+    return build_feishu_card(report, max_content=MAX_CONTENT)
 
-    logger.error("❌ 飞书发送失败 http=%s body=%s", resp.status_code, body)
-    return {"status": "failed", "error": f"{body.get('code')}: {body.get('msg')}"}
 
-# ================= 5. 构建 LangGraph 工作流 =================
-workflow = StateGraph(WeeklyReportState)
+#: 兼容旧变量：模块级 LLM（惰性代理，避免导入即要求 API Key）
+class _LazyLLM:
+    """惰性 LLM 代理：首次访问时才创建客户端。
 
-workflow.add_node("fetch_tasks", fetch_tasks)
-workflow.add_node("analyze_tasks", analyze_tasks)
-workflow.add_node("generate_report", generate_report)
-workflow.add_node("send_report", send_report)
+    旧版在导入时直接构造 ChatOpenAI，导致"没配 Key 连 import 都失败"。
+    """
 
-workflow.set_entry_point("fetch_tasks")
+    _inner: Any = None
 
-workflow.add_edge("fetch_tasks", "analyze_tasks")
-workflow.add_edge("analyze_tasks", "generate_report")
-workflow.add_edge("generate_report", "send_report")
-workflow.add_edge("send_report", END)
+    def _get(self) -> Any:
+        if self._inner is None:
+            from services.llm_factory import create_chat_model
 
-app = workflow.compile()
+            self._inner = create_chat_model()
+        return self._inner
 
-# ================= 6. 运行 =================
+    def __getattr__(self, item: str) -> Any:
+        return getattr(self._get(), item)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return "<LazyLLM (未初始化)>"
+
+
+llm = _LazyLLM()
+http_client = None  # 旧版共享客户端；现在由 llm_factory 统一管理
+
+#: 兼容旧变量：编译后的 LangGraph 图
+workflow = _default_service.graph
+app = workflow
+
+
 if __name__ == "__main__":
-    logger.info("🚀 启动自动周报生成 Agent...\n")
-    final_state = app.invoke({"tasks": [], "stats": {}, "report": "", "status": "start", "error": ""})
-    logger.info("✅ 周报生成流程结束！")
-    if final_state.get("status") == "failed":
-        logger.error(f"流程中存在失败节点: {final_state.get('error')}")
+    logger.info("🚀 启动自动周报生成 Agent...")
+    result = WeeklyReportService(send_to_feishu=True).run()
+    if result.status == "failed":
+        logger.error("流程中存在失败节点: %s", result.error)
     else:
-        logger.info(f"最终状态: {final_state.get('status')}")
+        logger.info("最终状态: %s | 耗时 %.2fs", result.status, result.elapsed_seconds)
+        if result.report:
+            logger.info("周报正文：\n%s", result.report)
+
+
+__all__ = [
+    "WeeklyReportService",
+    "WeeklyReportResult",
+    "WeeklyReportState",
+    "build_weekly_report_graph",
+    "default_task_provider",
+    "fetch_tasks",
+    "analyze_tasks",
+    "generate_report",
+    "send_report",
+    "_build_card",
+    "workflow",
+    "app",
+    "llm",
+    "http_client",
+    "FEISHU_WEBHOOK",
+    "MAX_CONTENT",
+]

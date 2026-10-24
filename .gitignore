@@ -1,6 +1,8 @@
 # ========= 敏感配置：含密码/密钥/Token，绝不提交 =========
 .env
 .env.*
+# 例外：示例文件不含真实密钥，必须入库供他人复现
+!.env.example
 .deploy_pw
 *.pem
 *.key
@@ -11,6 +13,16 @@ secrets.json
 auto_deploy.py
 auto_deploy_full.py
 upload_to_server.py
+deploy_two_files.py
+
+# ========= deploy/ 是生成产物，由 sync_deploy.py 同步 =========
+# 说明：deploy/ 的内容全部来自根目录（唯一真源），本应整体忽略。
+# 但仓库历史中已跟踪了其中一部分文件，这里不新增忽略规则以免造成
+# "部分跟踪、部分忽略"的混乱。请始终通过 sync_deploy.py 更新 deploy/，
+# 不要手工编辑；提交前可用 `python sync_deploy.py --check` 确认无漂移。
+# 其中含密钥/大数据的产物必须忽略：
+deploy/.env
+deploy/logs/
 
 # ========= 虚拟环境 =========
 .venv/
@@ -38,6 +50,10 @@ models/
 # 例外：依赖清单必须入库，否则项目无法复现
 !requirements.txt
 !requirements-*.txt
+
+# ========= 运行时产物（结构化日志输出目录） =========
+logs/
+**/logs/
 
 # ========= IDE / 编辑器 =========
 .idea/

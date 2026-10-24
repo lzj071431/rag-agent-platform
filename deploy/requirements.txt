@@ -1,6 +1,12 @@
 # ============================================================
 # 由项目 .venv 实际安装状态生成（pip freeze --all，2026-10-09）
 #
+# 【工程化重构新增的显式依赖】（此前已随其他包间接安装，现作为直接依赖锁定）
+#   pydantic==2.12.5          —— core/config.py 的配置校验与数据模型
+#   pydantic-settings==2.15.0 —— 环境变量统一管理（取代散落的 os.getenv）
+#   tenacity==9.1.4           —— utils/retry.py 的指数退避重试
+#   python-dotenv==1.2.3      —— .env 加载（由 pydantic-settings 内部调用）
+#
 # 【为什么以本文件为准】此前 requirements.txt 冻结于 2026-10-01，
 # 早于 CrewAI 的安装，因此：
 #   1. 完全缺失 crewai / crewai-core / crewai-tools / litellm

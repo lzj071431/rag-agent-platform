@@ -1,0 +1,32 @@
+# rag-qa-project 部署编排文件
+#
+# 说明：
+#   - 本文件是**唯一真源**，位于项目根目录；`sync_deploy.py` 会把它复制到
+#     deploy/ 供部署使用。请只修改这里，不要直接改 deploy/docker-compose.yml。
+#   - 构建上下文 = deploy/ 目录（Dockerfile 也由同步脚本复制过去）
+#   - .env 通过 env_file 注入容器
+#   - chroma_db 挂载到宿主机，重建镜像不会丢失已建好的向量库
+#   - models/ 目录（BAAI/bge-small-zh-v1.5）随构建上下文打进镜像 /app/models，
+#     因为 services/embeddings.py 强制 local_files_only=True
+services:
+  rag-qa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rag-qa-app:latest
+    container_name: rag-qa-app
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./chroma_db:/app/chroma_db
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
