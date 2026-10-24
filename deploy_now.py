@@ -43,7 +43,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 DEPLOY_DIR = PROJECT_ROOT / "deploy"
 
 # ---- 服务器配置（与 auto_deploy_full.py 保持一致）----
-HOST = "8.134.23.225"
+HOST = "8.148.199.18"
 PORT = 22
 USERNAME = "root"
 REMOTE_DIR = "/root/deploy"
